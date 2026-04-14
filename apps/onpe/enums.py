@@ -1,4 +1,5 @@
 from enum import Enum, StrEnum, auto
+from dataclasses import dataclass
 
 
 class Eleccion(StrEnum):
@@ -14,62 +15,47 @@ class AmbitoGeografico(StrEnum):
     EXTRANJERO = "2"
 
 
-class UbigeoNivel1(StrEnum):
-    AMAZONAS = "010000"
-    ANCASH = "020000"
-    APURIMAC = "030000"
-    AREQUIPA = "040000"
-    AYACUCHO = "050000"
-    CAJAMARCA = "060000"
-    CALLAO = "240000"
-    CUSCO = "070000"
-    HUANCAVELICA = "080000"
-    HUANUCO = "090000"
-    ICA = "100000"
-    JUNIN = "110000"
-    LA_LIBERTAD = "120000"
-    LAMBAYEQUE = "130000"
-    LIMA = "140000"
-    LORETO = "150000"
-    MADRE_DE_DIOS = "160000"
-    MOQUEGUA = "170000"
-    PASCO = "180000"
-    PIURA = "190000"
-    PUNO = "200000"
-    SAN_MARTIN = "210000"
-    TACNA = "220000"
-    TUMBES = "230000"
-    UCAYALI = "250000"
+@dataclass
+class LocationMetadata:
+    ubigeo: str | None = None
+    distrito: str | None = None
 
 
-class DistritoElectoral(StrEnum):
-    AMAZONAS = "1"
-    ANCASH = "2"
-    APURIMAC = "3"
-    AREQUIPA = "4"
-    AYACUCHO = "5"
-    CAJAMARCA = "6"
-    CALLAO = "7"
-    CUSCO = "8"
-    HUANCAVELICA = "9"
-    HUANUCO = "10"
-    ICA = "11"
-    JUNIN = "12"
-    LA_LIBERTAD = "13"
-    LAMBAYEQUE = "14"
-    LIMA_METROPOLITANA = "15"
-    LIMA_PROVINCIAS = "16"
-    LORETO = "17"
-    MADRE_DE_DIOS = "18"
-    MOQUEGUA = "19"
-    PASCO = "20"
-    PIURA = "21"
-    PUNO = "22"
-    SAN_MARTIN = "23"
-    TACNA = "24"
-    TUMBES = "25"
-    UCAYALI = "26"
-    PERUANOS_RESIDENTES_EN_EL_EXTRANJERO = "27"
+class UbigeoNivel1(Enum):
+    AMAZONAS = LocationMetadata("010000", "1")
+    ANCASH = LocationMetadata("020000", "2")
+    APURIMAC = LocationMetadata("030000", "3")
+    AREQUIPA = LocationMetadata("040000", "4")
+    AYACUCHO = LocationMetadata("050000", "5")
+    CAJAMARCA = LocationMetadata("060000", "6")
+    CALLAO = LocationMetadata("240000", "7")
+    CUSCO = LocationMetadata("070000", "8")
+    HUANCAVELICA = LocationMetadata("080000", "9")
+    HUANUCO = LocationMetadata("090000", "10")
+    ICA = LocationMetadata("100000", "11")
+    JUNIN = LocationMetadata("110000", "12")
+    LA_LIBERTAD = LocationMetadata("120000", "13")
+    LAMBAYEQUE = LocationMetadata("130000", "14")
+    LIMA_METROPOLITANA = LocationMetadata(None, "15")
+    LIMA_PROVINCIAS = LocationMetadata(None, "16")
+    LIMA = LocationMetadata("140000", None)
+    LORETO = LocationMetadata("150000", "17")
+    MADRE_DE_DIOS = LocationMetadata("160000", "18")
+    MOQUEGUA = LocationMetadata("170000", "19")
+    PASCO = LocationMetadata("180000", "20")
+    PIURA = LocationMetadata("190000", "21")
+    PUNO = LocationMetadata("200000", "22")
+    SAN_MARTIN = LocationMetadata("210000", "23")
+    TACNA = LocationMetadata("220000", "24")
+    TUMBES = LocationMetadata("230000", "25")
+    UCAYALI = LocationMetadata("250000", "26")
+    PERUANOS_RESIDENTES_EN_EL_EXTRANJERO = LocationMetadata(None, "27")
+
+    AFRICA = LocationMetadata("910000", None)
+    AMERICA = LocationMetadata("920000", None)
+    ASIA = LocationMetadata("930000", None)
+    EUROPA = LocationMetadata("940000", None)
+    OCEANIA = LocationMetadata("950000", None)
 
 
 class TipoFiltro(StrEnum):
