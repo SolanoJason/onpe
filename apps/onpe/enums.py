@@ -9,6 +9,19 @@ class Eleccion(StrEnum):
     DIPUTADOS = "13"
     PARLAMENTO_ANDINO = "12"
 
+    @property
+    def route(self) -> str:
+        if self == Eleccion.PRESIDENCIAL:
+            return "eleccion-presidencial"
+        elif self == Eleccion.SENADO_NACIONAL:
+            return "senadores-distrito-unico"
+        elif self == Eleccion.SENADO_REGIONAL:
+            return "senadores-distrital-multiple"
+        elif self == Eleccion.DIPUTADOS:
+            return "eleccion-diputado"
+        else:
+            return "parlamento-andino"
+
 
 class AmbitoGeografico(StrEnum):
     PERU = "1"

@@ -1,7 +1,7 @@
 from core.settings import settings
 import requests
-
-ONPE_API_URL = f"{settings.ONPE_URL}/presentacion-backend"
+from .schemas import ConsultaElectoral
+from typing import Literal
 
 headers = {
     "accept": "*/*",
@@ -22,3 +22,13 @@ cookies = {
     "_ga": "GA1.1.608236232.1776018014",
     "_ga_7X9XC2V582": "GS2.1.s1776103015$o6$g1$t1776103218$j60$l0$h391511575"
 }
+
+def get_resultados_onpe(consulta_electoral: ConsultaElectoral, mode: Literal['resumen', 'detalle']):
+    params = consulta_electoral.get_params(mode)
+    response = requests.get(
+        consulta_electoral.get_resultados_url() if mode == 'detalle' else consulta_electoral.get_resumen_url(),
+        params=params,
+        headers=headers,
+        cookies=cookies,
+    )
+    return response.json()

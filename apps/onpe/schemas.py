@@ -1,6 +1,7 @@
 from pydantic import BaseModel, computed_field, ConfigDict, Field, model_validator
-from typing import Annotated, Self
+from typing import Annotated, Self, Literal
 from .enums import Eleccion, AmbitoGeografico, UbigeoNivel1, TipoFiltro
+from core.settings import settings
 
 class ConsultaElectoral(BaseModel):
 
@@ -31,6 +32,12 @@ class ConsultaElectoral(BaseModel):
                 self.ubigeo = UbigeoNivel1.PERUANOS_RESIDENTES_EN_EL_EXTRANJERO
             if self.ubigeo != UbigeoNivel1.PERUANOS_RESIDENTES_EN_EL_EXTRANJERO:
                 raise ValueError("Para elecciones de senado regional o diputados, si el ámbito geográfico es extranjero, el ubigeo debe ser 'Peruanos residentes en el extranjero' o None.")
+        elif self.eleccion in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS] and self.ambito is None:
+            self.ambito = AmbitoGeografico.PERU
+
+        if self.eleccion in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS] and self.ubigeo is None:
+            raise ValueError("Para elecciones de senado regional o diputados, el ubigeo no puede ser None.")
+            
             
         if self.ubigeo is not None and self.ambito is None:
             if self.ubigeo in [UbigeoNivel1.AFRICA, UbigeoNivel1.AMERICA, UbigeoNivel1.ASIA, UbigeoNivel1.EUROPA, UbigeoNivel1.OCEANIA, UbigeoNivel1.PERUANOS_RESIDENTES_EN_EL_EXTRANJERO]:
@@ -48,3 +55,24 @@ class ConsultaElectoral(BaseModel):
                 raise ValueError(f"El ubigeo especificado ({self.ubigeo.name}) no es válido para elecciones presidenciales o de senado nacional o parlamento andino")
             
         return self
+    
+    def get_params(self, mode: Literal['resumen', 'detalle']) -> dict:
+        params: dict = {"idEleccion": self.eleccion.value, "tipoFiltro": self.tipo_filtro.value}
+        if self.ambito is not None and self.eleccion not in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS]:
+            params["idAmbitoGeografico"] = self.ambito.value
+        if self.ubigeo is not None:
+            if self.eleccion in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS]:
+                params["idDistritoElectoral"] = self.ubigeo.value.distrito
+            else:
+                if mode == 'detalle':
+                    params["ubigeoNivel1"] = self.ubigeo.value.ubigeo
+                else:
+                    params["idUbigeoDepartamento"] = self.ubigeo.value.ubigeo
+        return params
+    
+    def get_resultados_url(self):
+        path = "participantes-ubicacion-geografica" if self.eleccion in [Eleccion.SENADO_REGIONAL] else "participantes-ubicacion-geografica-nombre"
+        return f"{settings.ONPE_URL}/presentacion-backend/{self.eleccion.route}/{path}"
+    
+    def get_resumen_url(self):
+        return f"{settings.ONPE_URL}/presentacion-backend/resumen-general/totales"
