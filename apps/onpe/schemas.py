@@ -1,6 +1,6 @@
 from pydantic import BaseModel, computed_field, ConfigDict, Field, model_validator
 from typing import Annotated, Self, Literal
-from .enums import Eleccion, AmbitoGeografico, UbigeoNivel1, TipoFiltro
+from .enums import Eleccion, AmbitoGeografico, UbigeoNivel1, TipoFiltro, UbigeoNivel2
 from core.settings import settings
 
 class ConsultaElectoral(BaseModel):
@@ -12,10 +12,13 @@ class ConsultaElectoral(BaseModel):
         AmbitoGeografico | None, Field(exclude_if=lambda v: v is None)
     ] = None
     ubigeo: Annotated[UbigeoNivel1 | None, Field(exclude_if=lambda v: v is None)] = None
+    ubigeo_2: UbigeoNivel2 | None = None
 
     @computed_field
     @property
     def tipo_filtro(self) -> TipoFiltro:
+        if self.ubigeo_2 is not None:
+            return TipoFiltro.UBIGEO_NIVEL_02
         if self.ubigeo is not None:
             if self.eleccion in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS]:
                 return TipoFiltro.DISTRITO_ELECTORAL
@@ -54,6 +57,9 @@ class ConsultaElectoral(BaseModel):
             elif self.eleccion in [Eleccion.PRESIDENCIAL, Eleccion.SENADO_NACIONAL, Eleccion.PARLAMENTO_ANDINO] and self.ubigeo.value.ubigeo is None:
                 raise ValueError(f"El ubigeo especificado ({self.ubigeo.name}) no es válido para elecciones presidenciales o de senado nacional o parlamento andino")
             
+        if self.ubigeo_2 is not None:
+            self.ubigeo = self.ubigeo_2.nivel1
+            
         return self
     
     def get_params(self, mode: Literal['resumen', 'detalle']) -> dict:
@@ -68,6 +74,9 @@ class ConsultaElectoral(BaseModel):
                     params["ubigeoNivel1"] = self.ubigeo.value.ubigeo
                 else:
                     params["idUbigeoDepartamento"] = self.ubigeo.value.ubigeo
+        if self.ubigeo_2 is not None and mode == 'detalle':
+            params['ubigeoNivel2'] = self.ubigeo_2.value
+            params['ubigeoNivel1'] = self.ubigeo_2.nivel1.value.ubigeo
         return params
     
     def get_resultados_url(self):
@@ -76,3 +85,6 @@ class ConsultaElectoral(BaseModel):
     
     def get_resumen_url(self):
         return f"{settings.ONPE_URL}/presentacion-backend/resumen-general/totales"
+    
+    def get_provincias_url(self):
+        return f"{settings.ONPE_URL}/presentacion-backend/ubigeos/provincias"
