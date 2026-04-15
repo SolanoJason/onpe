@@ -30,6 +30,12 @@ class ConsultaElectoral(BaseModel):
         
     @model_validator(mode="after")
     def validate_consistency(self) -> Self:
+        if self.ubigeo_2 is not None:
+            self.ubigeo = self.ubigeo_2.nivel1
+            if self.ubigeo_2.value.startswith("9"):
+                self.ambito = AmbitoGeografico.EXTRANJERO
+            else:
+                self.ambito = AmbitoGeografico.PERU
         if self.ambito == AmbitoGeografico.EXTRANJERO and self.eleccion in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS]:
             if self.ubigeo is None:
                 self.ubigeo = UbigeoNivel1.PERUANOS_RESIDENTES_EN_EL_EXTRANJERO
@@ -74,6 +80,8 @@ class ConsultaElectoral(BaseModel):
                     params["ubigeoNivel1"] = self.ubigeo.value.ubigeo
                 else:
                     params["idUbigeoDepartamento"] = self.ubigeo.value.ubigeo
+                    if self.ubigeo_2 is not None:
+                        params["idUbigeoProvincia"] = self.ubigeo_2.value
         if self.ubigeo_2 is not None and mode == 'detalle':
             params['ubigeoNivel2'] = self.ubigeo_2.value
             params['ubigeoNivel1'] = self.ubigeo_2.nivel1.value.ubigeo
