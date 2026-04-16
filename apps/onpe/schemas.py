@@ -1,11 +1,11 @@
 from pydantic import BaseModel, computed_field, ConfigDict, Field, model_validator
 from typing import Annotated, Self, Literal
-from .enums import Eleccion, AmbitoGeografico, UbigeoNivel1, TipoFiltro, UbigeoNivel2
+from .enums import Eleccion, AmbitoGeografico, UbigeoNivel1, TipoFiltro, UbigeoNivel2, UbigeoNivel3
 from core.settings import settings
 
 class ConsultaElectoral(BaseModel):
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", use_enum_values=False)
 
     eleccion: Eleccion
     ambito: Annotated[
@@ -13,10 +13,14 @@ class ConsultaElectoral(BaseModel):
     ] = None
     ubigeo: Annotated[UbigeoNivel1 | None, Field(exclude_if=lambda v: v is None)] = None
     ubigeo_2: UbigeoNivel2 | None = None
+    ubigeo_3: UbigeoNivel3 | None = None
+
 
     @computed_field
     @property
     def tipo_filtro(self) -> TipoFiltro:
+        if self.ubigeo_3 is not None:
+            return TipoFiltro.UBIGEO_NIVEL_03
         if self.ubigeo_2 is not None:
             return TipoFiltro.UBIGEO_NIVEL_02
         if self.ubigeo is not None:
@@ -30,6 +34,8 @@ class ConsultaElectoral(BaseModel):
         
     @model_validator(mode="after")
     def validate_consistency(self) -> Self:
+        if self.ubigeo_3 is not None:
+            self.ubigeo_2 = self.ubigeo_3.nivel2
         if self.ubigeo_2 is not None:
             self.ubigeo = self.ubigeo_2.nivel1
             if self.ubigeo_2.value.startswith("9"):
@@ -68,7 +74,10 @@ class ConsultaElectoral(BaseModel):
             
         return self
     
-    def get_params(self, mode: Literal['resumen', 'detalle']) -> dict:
+    def get_params(self, mode: Literal['resumen', 'detalle', 'participacion']) -> dict:
+        x_mode = mode
+        if mode == "participacion":
+            mode = "detalle"
         params: dict = {"idEleccion": self.eleccion.value, "tipoFiltro": self.tipo_filtro.value}
         if self.ambito is not None and self.eleccion not in [Eleccion.SENADO_REGIONAL, Eleccion.DIPUTADOS]:
             params["idAmbitoGeografico"] = self.ambito.value
@@ -82,9 +91,24 @@ class ConsultaElectoral(BaseModel):
                     params["idUbigeoDepartamento"] = self.ubigeo.value.ubigeo
                     if self.ubigeo_2 is not None:
                         params["idUbigeoProvincia"] = self.ubigeo_2.value
+                    if self.ubigeo_3 is not None:
+                        params["idUbigeoDistrito"] = self.ubigeo_3.value
+        if self.ubigeo_3 is not None and mode in ['detalle', 'participacion']:
+            params['ubigeoNivel3'] = self.ubigeo_3.value
         if self.ubigeo_2 is not None and mode == 'detalle':
             params['ubigeoNivel2'] = self.ubigeo_2.value
             params['ubigeoNivel1'] = self.ubigeo_2.nivel1.value.ubigeo
+        if x_mode == 'participacion':
+            params.pop('idEleccion')
+            keys_to_map = [
+                ('ubigeoNivel1', 'ubigeoNivel01'),
+                ('ubigeoNivel2', 'ubigeoNivel02'),
+                ('ubigeoNivel3', 'ubigeoNivel03')
+            ]
+
+            for old_key, new_key in keys_to_map:
+                if old_key in params:
+                    params[new_key] = params.pop(old_key)
         return params
     
     def get_resultados_url(self):
@@ -96,3 +120,6 @@ class ConsultaElectoral(BaseModel):
     
     def get_provincias_url(self):
         return f"{settings.ONPE_URL}/presentacion-backend/ubigeos/provincias"
+    
+    def get_participacion_url(self):
+        return f"{settings.ONPE_URL}/presentacion-backend/participacion-ciudadana/totales"
